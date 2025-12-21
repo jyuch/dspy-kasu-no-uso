@@ -10,5 +10,4 @@ wheels/
 .venv
 
 # Datasets and program
-datasets
 program

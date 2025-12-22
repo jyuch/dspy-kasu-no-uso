@@ -11,3 +11,6 @@ wheels/
 
 # Datasets and program
 program
+
+# .env
+.env

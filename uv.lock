@@ -531,6 +531,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "dspy" },
     { name = "mlflow" },
+    { name = "python-dotenv" },
 ]
 
 [package.dev-dependencies]
@@ -542,6 +543,7 @@ dev = [
 requires-dist = [
     { name = "dspy", specifier = ">=3.0.4" },
     { name = "mlflow", specifier = ">=3.7.0" },
+    { name = "python-dotenv", specifier = ">=1.2.1" },
 ]
 
 [package.metadata.requires-dev]

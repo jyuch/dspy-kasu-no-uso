@@ -1,8 +1,11 @@
 import csv
+import os
 import random
 from typing import List
+
 import dspy
 import mlflow
+from dotenv import load_dotenv
 
 
 class LieGenerate(dspy.Signature):
@@ -60,7 +63,10 @@ def create_lie_metric():
 
 
 def run_prompt_optimizer(
-    trainset: List[dspy.Example], valset: List[dspy.Example], reflection_lm: dspy.LM
+    trainset: List[dspy.Example],
+    valset: List[dspy.Example],
+    reflection_lm: dspy.LM,
+    llm_symbol: str = "",
 ):
     student_program = GenerateLie()
     metric = create_lie_metric()
@@ -76,22 +82,29 @@ def run_prompt_optimizer(
     compiled_program: GenerateLie = optimizer.compile(
         student_program, trainset=trainset, valset=valset
     )
-    compiled_program.save("./program/generate_lie.json", save_program=False)
+    if llm_symbol:
+        compiled_program.save(
+            f"./program/generate_lie-{llm_symbol}.json", save_program=False
+        )
+    else:
+        compiled_program.save("./program/generate_lie.json", save_program=False)
 
 
 def main():
+    load_dotenv()
+
+    lm_model = os.environ.get("LM_MODEL", "databricks/databricks-gpt-oss-120b")
+    reflection_model = os.environ.get("REFLECTION_LM_MODEL", lm_model)
+    llm_symbol = os.environ.get("LM_SYMBOL", None)
+
     mlflow.dspy.autolog(
         log_compiles=True,
         log_evals=True,
         log_traces_from_compile=True,
     )
 
-    llm = dspy.LM("databricks/databricks-gpt-oss-120b", cache=False, temperature=1.0)
-    # llm = dspy.LM(
-    #    "databricks/databricks-qwen3-next-80b-a3b-instruct",
-    #    cache=False,
-    #    temperature=1.0,
-    # )
+    llm = dspy.LM(lm_model, cache=False, temperature=1.0)
+    reflection_lm = dspy.LM(reflection_model, cache=False, temperature=1.0)
 
     dspy.configure(lm=llm, adapter=dspy.JSONAdapter())
 
@@ -108,7 +121,7 @@ def main():
     trainset = train_examples[: int(len(train_examples) * 0.7)]
     valset = train_examples[int(len(train_examples) * 0.3) :]
 
-    run_prompt_optimizer(trainset, valset, llm)
+    run_prompt_optimizer(trainset, valset, reflection_lm, llm_symbol)
 
 
 if __name__ == "__main__":

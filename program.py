@@ -1,3 +1,5 @@
+import os
+
 import dspy
 import mlflow
 
@@ -7,16 +9,17 @@ from generate_lie import GenerateLie
 def main():
     mlflow.dspy.autolog()
 
-    llm = dspy.LM("databricks/databricks-gpt-oss-120b", cache=False, temperature=1.0)
-    # llm = dspy.LM(
-    #    "databricks/databricks-qwen3-next-80b-a3b-instruct",
-    #    cache=False,
-    #    temperature=1.0,
-    # )
+    lm_model = os.environ["LM_MODEL"]
+    llm_symbol = os.environ.get("LM_SYMBOL")
+
+    llm = dspy.LM(lm_model, cache=False, temperature=0.8)
     dspy.configure(lm=llm, adapter=dspy.JSONAdapter())
 
     p = GenerateLie()
-    p.load("./program/generate_lie.json")
+    if llm_symbol:
+        p.load(f"./program/generate_lie_{llm_symbol}.json")
+    else:
+        p.load("./program/generate_lie.json")
 
     while True:
         print("> ", end="")

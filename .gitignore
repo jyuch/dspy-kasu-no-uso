@@ -9,8 +9,5 @@ wheels/
 # Virtual environments
 .venv
 
-# Datasets and program
-program
-
 # .env
 .env

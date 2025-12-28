@@ -24,7 +24,7 @@ class GenerateLie(dspy.Module):
         return self.extractor(keyword=keyword)
 
 
-def create_lie_metric():
+def create_lie_metric(reflection_lm: dspy.LM):
     class StyleEvaluation(dspy.Signature):
         """応答のスタイルを評価"""
 
@@ -47,17 +47,15 @@ def create_lie_metric():
             - 存在しない税が免除されるといった一つの文の中に複数の嘘が入っている場合は減点
         4. 余計な解説や文が入っておらず、嘘のみの出力となっているか（2点）
         5. 語頭に「ね、知ってる？」や「実は」を適切に使っているか（2点）
-        6. 語尾に「なんだよ」や「なんだって」を自然に接続して適切に使っているか（2点）
-            - 「らしいなんだよ」のような、不自然な接続となっている場合は減点
-            - 語尾が厳密に「なんだよ」「なんだって」になっていなくても、自然に接続されている場合は得点とする
+        6. 語尾に「（な）んだよ」や「（な）んだって」、「らしいよ」を自然に接続して適切に使っているか（2点）
         7. 日本語として自然で読みやすいか（2点）
         8. 穏やかで落ち着いた口調か（2点）
         """
-
-        eval_result = evaluator(response=pred.lie, criteria=criteria)
-        score = min(20, max(0, float(eval_result.score))) / 20.0
-        explanation = eval_result.explanation
-        return dspy.Prediction(score=score, feedback=explanation)
+        with dspy.context(lm=reflection_lm):
+            eval_result = evaluator(response=pred.lie, criteria=criteria)
+            score = min(20, max(0, float(eval_result.score))) / 20.0
+            explanation = eval_result.explanation
+            return dspy.Prediction(score=score, feedback=explanation)
 
     return lie_metric
 
@@ -69,7 +67,7 @@ def run_prompt_optimizer(
     llm_symbol: str = "",
 ):
     student_program = GenerateLie()
-    metric = create_lie_metric()
+    metric = create_lie_metric(reflection_lm)
     optimizer = dspy.GEPA(
         metric=metric,
         auto="light",
@@ -84,7 +82,7 @@ def run_prompt_optimizer(
     )
     if llm_symbol:
         compiled_program.save(
-            f"./program/generate_lie-{llm_symbol}.json", save_program=False
+            f"./program/generate_lie_{llm_symbol}.json", save_program=False
         )
     else:
         compiled_program.save("./program/generate_lie.json", save_program=False)
@@ -93,18 +91,18 @@ def run_prompt_optimizer(
 def main():
     load_dotenv()
 
-    lm_model = os.environ.get("LM_MODEL", "databricks/databricks-gpt-oss-120b")
-    reflection_model = os.environ.get("REFLECTION_LM_MODEL", lm_model)
-    llm_symbol = os.environ.get("LM_SYMBOL", None)
-
     mlflow.dspy.autolog(
         log_compiles=True,
         log_evals=True,
         log_traces_from_compile=True,
     )
 
-    llm = dspy.LM(lm_model, cache=False, temperature=1.0)
-    reflection_lm = dspy.LM(reflection_model, cache=False, temperature=1.0)
+    lm_model = os.environ["LM_MODEL"]
+    reflection_model = os.environ["REFLECTION_LM_MODEL"]
+    llm_symbol = os.environ.get("LM_SYMBOL")
+
+    llm = dspy.LM(lm_model, cache=False, temperature=0.8)
+    reflection_lm = dspy.LM(reflection_model, cache=False, temperature=0.8)
 
     dspy.configure(lm=llm, adapter=dspy.JSONAdapter())
 

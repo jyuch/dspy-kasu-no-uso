@@ -1,0 +1,9 @@
+claude-haiku-4-5-20251001,haiku-4-5,88.97
+claude-haiku-4-5-20251001,gpt-oss-120b,86.62
+claude-haiku-4-5-20251001,gpt-oss-20b,88.53
+databricks/databricks-gpt-oss-120b,haiku-4-5,84.56
+databricks/databricks-gpt-oss-120b,gpt-oss-120b,88.38
+databricks/databricks-gpt-oss-120b,gpt-oss-20b,88.24
+databricks/databricks-gpt-oss-20b,haiku-4-5,84.56
+databricks/databricks-gpt-oss-20b,gpt-oss-120b,81.32
+databricks/databricks-gpt-oss-20b,gpt-oss-20b,87.5
